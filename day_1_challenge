@@ -1,0 +1,91 @@
+-- Problem 1
+
+create table icc_world_cup
+(
+Team_1 Varchar(20),
+Team_2 Varchar(20),
+Winner Varchar(20)
+);
+INSERT INTO icc_world_cup values('India','SL','India');
+INSERT INTO icc_world_cup values('SL','Aus','Aus');
+INSERT INTO icc_world_cup values('SA','Eng','Eng');
+INSERT INTO icc_world_cup values('Eng','NZ','NZ');
+INSERT INTO icc_world_cup values('Aus','India','India');
+
+select * from icc_world_cup;
+select players, count(1) as num_matches_played, sum(fl_won) as num_matches_won, count(1) - sum(fl_won) as num_matches_lost
+from(
+select team_1 as players, case when Winner = Team_1 then 1 else 0 end as fl_won from icc_world_cup
+union all
+select Team_2 as players, case when Winner = Team_2 then 1 else 0 end as fl_won from icc_world_cup) a
+group by 1;
+
+
+-- problem 2
+
+create table customer_orders (
+order_id integer,
+customer_id integer,
+order_date date,
+order_amount integer
+);
+
+insert into customer_orders values(1,100,cast('2022-01-01' as date),2000),(2,200,cast('2022-01-01' as date),2500),(3,300,cast('2022-01-01' as date),2100)
+,(4,100,cast('2022-01-02' as date),2000),(5,400,cast('2022-01-02' as date),2200),(6,500,cast('2022-01-02' as date),2700)
+,(7,100,cast('2022-01-03' as date),3000),(8,400,cast('2022-01-03' as date),1000),(9,600,cast('2022-01-03' as date),3000)
+;
+select * from customer_orders;
+
+with new as(
+select customer_id, order_date, 
+min(order_date) over(partition by customer_id order by order_date) as first_order_Date
+ from customer_orders)
+select order_date, 
+count(case when order_date = first_order_date then customer_id end) as num_new_customers,
+count(case when order_date != first_order_date then customer_id end) as num_repeat_customers
+from new group by 1;
+
+-- problem 3
+
+create table entries ( 
+name varchar(20),
+address varchar(20),
+email varchar(20),
+floor int,
+resources varchar(10));
+
+insert into entries 
+values ('A','Bangalore','A@gmail.com',1,'CPU'),('A','Bangalore','A1@gmail.com',1,'CPU'),('A','Bangalore','A2@gmail.com',2,'DESKTOP')
+,('B','Bangalore','B@gmail.com',2,'DESKTOP'),('B','Bangalore','B1@gmail.com',2,'DESKTOP'),('B','Bangalore','B2@gmail.com',1,'MONITOR');
+
+select * from entries;
+
+with a as (
+select name, floor, 
+rank() over(partition by floor order by count(1) desc) as rnk
+from entries
+group by 1,2)
+select a.name, a.floor as max_visited, 
+count(a.name) as num_times_visited,
+group_concat(distinct resources separator ',') as floors_visted
+from  a 
+join entries b on a.name = b.name 
+where a.rnk = 1
+group by 1,2;
+
+
+-- problem 4
+-- write a query to provide the date for nth occurence of sunday in future from given date 
+
+SET @given_date = '2025-03-30';
+SET @n = 2; 
+
+-- Find the next Sunday
+SET @days_to_sunday = (6 - WEEKDAY(@given_date)) % 6;
+
+-- Calculate the nth Sunday from the given date
+SELECT @given_date AS given_date,
+@days_to_sunday,
+WEEKDAY(@given_date) AS weekday_of_given_date,
+DATE_ADD(@given_date, INTERVAL @days_to_sunday + (@n - 1) * 7 DAY) AS nth_sunday_date;
+
